@@ -25,7 +25,7 @@ CREATE TABLE departamentos(
 CREATE TABLE sala(
     id_sala SERIAL PRIMARY KEY UNIQUE NOT NULL,
     tipo_sala VARCHAR(40) NOT NULL 
-    CHECK (tipo sala IN ('UCI', 'Quirofano', 
+    CHECK (tipo_sala IN ('UCI', 'Quirofano', 
     'Urgencias', 'Consulta Externa', 'Imagenologia', 'Laboratorio')
     ),
     capacidad INT CHECK (capacidad > 0),
@@ -49,26 +49,35 @@ CREATE TABLE cama(
         REFERENCES sala (id_sala)
 );
 
+CREATE TABLE paciente(
+    id_paciente SERIAL PRIMARY KEY UNIQUE NOT NULL,
+    nombre VARCHAR(40) NOT NULL,
+    apellido VARCHAR(40) NOT NULL,
+    fecha_nacimiento DATE NOT NULL,
+    CURP VARCHAR(18) UNIQUE NOT NULL
+);
+
 CREATE TABLE ingreso(
     id_ingreso SERIAL PRIMARY KEY UNIQUE NOT NULL,
-    fecha_ingreso NOT NULL DEFAULT NOW,
+    fecha_ingreso TIMESTAMP NOT NULL DEFAULT NOW(),
     motivo_ingreso VARCHAR(255) NOT NULL,
-    estado VARCHAR(20) NOT NULL,
+    estado VARCHAR(20) NOT NULL
+    CHECK (estado IN ('Activo', 'Alta', 'Transferencia', 'Fallecido')),
 
     id_cama INT NOT NULL,
     CONSTRAINT fk_cama_ingreso
         FOREIGN KEY (id_cama)
-        REFERENCES cama (id_cama)
+        REFERENCES cama (id_cama),
 
     id_paciente INT NOT NULL,
-    CONSTRAINT fk_paciente_alta
+    CONSTRAINT fk_paciente_ingreso
         FOREIGN KEY (id_paciente)
         REFERENCES paciente (id_paciente)
 );
 
 CREATE TABLE alta(
     id_alta SERIAL PRIMARY KEY UNIQUE NOT NULL,
-    fecha_alta NOT NULL DEFAULT NOW(),
+    fecha_alta TIMESTAMP NOT NULL DEFAULT NOW(),
     condicion_alta VARCHAR(50) NOT NULL,
     indicaciones VARCHAR(255),
 
@@ -77,10 +86,6 @@ CREATE TABLE alta(
         FOREIGN KEY (id_ingreso)
         REFERENCES ingreso(id_ingreso)
     
-    id_paciente INT NOT NULL,
-    CONSTRAINT fk_paciente_alta
-        FOREIGN KEY (id_paciente)
-        REFERENCES paciente (id_paciente)
 );
 
 CREATE TABLE personal(
@@ -101,28 +106,31 @@ CREATE TABLE personal(
 
 CREATE TABLE agenda(
     id_agenda SERIAL PRIMARY KEY UNIQUE NOT NULL,
-    fecha_inicio NOT NULL DEFAULT NOW,
+    fecha_inicio TIMESTAMP NOT NULL DEFAULT NOW(),
     fecha_fin TIMESTAMP,
     capacidad INT NOT NULL CHECK (capacidad > 0),
 
     id_personal INT NOT NULL,
     CONSTRAINT fk_personal_agenda
         FOREIGN KEY (id_personal)
-        REFERENCES personal (id_personal)
+        REFERENCES personal (id_personal),
 
     CONSTRAINT chk_fecha_agenda
-        CHECK (fecha_fin > fecha_inicio),
+        CHECK (fecha_fin IS NULL OR fecha_fin > fecha_inicio)
+
 );
 
-CREATE TABLE consulta(
-    id_consulta SERIAL PRIMARY KEY UNIQUE NOT NULL,
-    fecha_consulta NOT NULL TIMESTAMP,
-    motivo VARCHAR(255) NOT NULL,
+CREATE TABLE cita(
+    id_cita SERIAL PRIMARY KEY UNIQUE NOT NULL,
+    fecha_cita TIMESTAMP NOT NULL DEFAULT NOW(),
+    estado VARCHAR(20) NOT NULL 
+    CHECK (estado IN ('Programada', 'Confirmada', 'Cancelada',
+     'No asistio', 'Completada', 'Reprogramada')),
 
-    id_agenda INT NOT NULL,
-    CONSTRAINT fk_agenda_consulta
+     id_agenda INT NOT NULL,
+        CONSTRAINT fk_agenda_cita
         FOREIGN KEY (id_agenda)
-        REFERENCES agenda (id_agenda)
+        REFERENCES agenda(id_agenda),
 
     id_paciente INT NOT NULL,
     CONSTRAINT fk_paciente_consulta
@@ -130,10 +138,25 @@ CREATE TABLE consulta(
         REFERENCES paciente (id_paciente)
 );
 
-CREATE TABLE paciente(
-    id_paciente SERIAL PRIMARY KEY UNIQUE NOT NULL,
-    nombre VARCHAR(40) NOT NULL,
-    apellido VARCHAR(40) NOT NULL,
-    fecha_nacimiento DATE NOT NULL,
-    CURP VARCHAR(18) UNIQUE NOT NULL,
+CREATE TABLE consulta(
+    id_consulta SERIAL PRIMARY KEY UNIQUE NOT NULL,
+    fecha_consulta TIMESTAMP NOT NULL DEFAULT NOW(),
+    motivo VARCHAR(255) NOT NULL,
+
+    id_cita INT UNIQUE NOT NULL,
+    CONSTRAINT fk_cita_consulta
+        FOREIGN KEY (id_cita)
+        REFERENCES cita (id_cita)
+
+);
+
+CREATE TABLE factura(
+    id_factura SERIAL PRIMARY KEY UNIQUE NOT NULL,
+    fecha_factura TIMESTAMP NOT NULL DEFAULT NOW(),
+    importe DECIMAL(10, 2) NOT NULL CHECK (importe >= 0),
+
+    id_consulta INT UNIQUE NOT NULL,
+    CONSTRAINT fk_consulta_factura
+        FOREIGN KEY (id_consulta)
+        REFERENCES consulta (id_consulta)
 );
