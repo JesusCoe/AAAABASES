@@ -3,7 +3,7 @@
 DROP DATABASE IF EXISTS sistema_hospitalario; 
 -- Eliminar la base de datos si ya existe para evitar errores al crearla nuevamente
 
-CREATE DATABASE sistema_hospitalario;
+CREATE DATABASE sistema_hospitalario
     WITH
     OWNER = postgres
     ENCODING = 'UTF8'
@@ -18,8 +18,6 @@ CREATE TABLE departamentos(
     id_depto SERIAL PRIMARY KEY UNIQUE NOT NULL,
     nombre_depto VARCHAR(50) UNIQUE NOT NULL,
     servicio VARCHAR(40) NOT NULL,
-    prioridad INT CHECK (prioridad > 0) 
-    -- prioridad: 1 (alta), 2 (media), 3 (baja)
 );
 
 CREATE TABLE sala(
